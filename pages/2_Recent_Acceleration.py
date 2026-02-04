@@ -3,9 +3,16 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+# ---------------- Page Setup ----------------
 st.set_page_config(layout="wide")
-st.title("1. Global Temperature Trends")
+st.title("📈 Recent Acceleration in Global Warming")
 
+st.caption(
+    "This page examines whether warming has accelerated in recent decades "
+    "by comparing observed temperature trends across historical periods."
+)
+
+# ---------------- Load Data ----------------
 @st.cache_data
 def load_data():
     df = pd.read_csv("GlobalTemperatures.csv")
@@ -19,58 +26,90 @@ annual = df["LandAndOceanAverageTemperature"].resample("YE").mean()
 baseline = annual.loc["1850":"1900"].mean()
 anomaly = annual - baseline
 
-years = anomaly.index.year.values
-temps = anomaly.values
+# ---------------- Helper Function ----------------
+def compute_rate(series):
+    """
+    Safely compute warming rate (°C/decade).
+    Returns None if data is insufficient.
+    """
+    if series is None or len(series) < 5:
+        return None
+    x = series.index.year.values
+    y = series.values
+    slope, _ = np.polyfit(x, y, 1)
+    return slope * 10
 
-slope, intercept = np.polyfit(years, temps, 1)
-trend = slope * years + intercept
+# ---------------- Period Definitions ----------------
+early = anomaly.loc["1850":"1900"]
+mid = anomaly.loc["1900":"1980"]
+recent = anomaly.loc["1980":]
 
+early_rate = compute_rate(early)
+mid_rate = compute_rate(mid)
+recent_rate = compute_rate(recent)
+
+# ---------------- Metrics ----------------
+st.markdown("### 📊 Acceleration Signals")
+
+c1, c2, c3 = st.columns(3)
+
+c1.metric(
+    "1850–1900 rate",
+    f"{early_rate:.2f} °C / decade" if early_rate is not None else "Insufficient data"
+)
+
+c2.metric(
+    "1900–1980 rate",
+    f"{mid_rate:.2f} °C / decade" if mid_rate is not None else "Insufficient data"
+)
+
+c3.metric(
+    "Post-1980 rate",
+    f"{recent_rate:.2f} °C / decade" if recent_rate is not None else "Insufficient data"
+)
+
+st.caption("Rates are calculated using linear regression on observed data only.")
+
+st.divider()
+
+# ---------------- Visual Comparison ----------------
 fig = go.Figure()
-fig.add_trace(go.Scatter(x=years, y=temps, name="Observed anomaly"))
-fig.add_trace(go.Scatter(x=years, y=trend, name="Long-term trend", line=dict(dash="dash")))
+
+fig.add_trace(go.Scatter(
+    x=anomaly.index.year,
+    y=anomaly.values,
+    name="Temperature anomaly",
+    line=dict(color="#1565c0")
+))
 
 fig.update_layout(
-    height=450,
+    height=460,
     xaxis_title="Year",
-    yaxis_title="Temperature anomaly (°C)"
+    yaxis_title="Temperature anomaly (°C)",
+    hovermode="x unified",
+    template="plotly_white"
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.metric("Long-term warming rate", f"{slope*10:.2f} °C per decade")
+# ---------------- Interpretation ----------------
+st.markdown("### 🧠 What this tells us")
 
-st.divider()
-
-with st.expander("🔍 Seasonal structure (3D view)"):
-    df_m = df.copy()
-    df_m["Year"] = df_m.index.year
-    df_m["Month"] = df_m.index.month
-
-    pivot = df_m.pivot_table(
-        index="Year",
-        columns="Month",
-        values="LandAndOceanAverageTemperature",
-        aggfunc="mean"
+if recent_rate and mid_rate and recent_rate > mid_rate:
+    st.success(
+        "Warming has **accelerated in recent decades**. "
+        "The post-1980 warming rate is significantly higher than earlier periods."
+    )
+elif recent_rate and mid_rate:
+    st.info(
+        "Warming continues, but acceleration relative to earlier periods is modest."
+    )
+else:
+    st.warning(
+        "Not enough data to confidently assess acceleration for all periods."
     )
 
-    fig3d = go.Figure(
-        data=[go.Surface(
-            z=pivot.values,
-            x=pivot.columns,
-            y=pivot.index,
-            colorscale="Viridis"
-        )]
-    )
-
-    fig3d.update_layout(
-        height=500,
-        scene=dict(
-            xaxis_title="Month",
-            yaxis_title="Year",
-            zaxis_title="Temperature (°C)"
-        )
-    )
-
-    st.plotly_chart(fig3d, use_container_width=True)
-
-st.caption("3D view highlights seasonality layered onto long-term warming.")
+st.caption(
+    "This analysis uses historical observations only. "
+    "It does not forecast future temperatures."
+)
