@@ -1,4 +1,1 @@
-streamlit
-pandas
-numpy
-plotly
+python-3.10
