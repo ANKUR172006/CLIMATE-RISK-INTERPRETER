@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ---------------- Page Setup ----------------
 st.set_page_config(layout="wide")
 st.title("🌍 Regional & Country-Level Risk Interpretation")
 
@@ -16,7 +15,6 @@ st.write(
 
 st.divider()
 
-# ---------------- Global Context ----------------
 st.subheader("🌡️ Global warming context")
 
 global_rate = st.slider(
@@ -30,7 +28,6 @@ st.caption(
 
 st.divider()
 
-# ---------------- Time Horizon ----------------
 st.subheader("⏳ Impact time horizon")
 
 horizon = st.selectbox(
@@ -44,7 +41,6 @@ st.caption(
 
 st.divider()
 
-# ---------------- Region Selection ----------------
 st.subheader("🗺️ Regional amplification")
 
 region = st.selectbox(
@@ -58,7 +54,6 @@ region = st.selectbox(
     ]
 )
 
-# Amplification + exposure (interpretive, not predictive)
 region_multipliers = {
     "Global Average": 1.0,
     "South Asia": 1.1,
@@ -75,8 +70,18 @@ exposure_factors = {
     "Small Island States": 1.5
 }
 
+adaptive_capacity = {
+    "Global Average": 0.8,
+    "South Asia": 0.6,
+    "Arctic": 0.7,
+    "Europe": 0.9,
+    "Small Island States": 0.5
+}
+
 regional_rate = global_rate * region_multipliers[region]
-risk_score = regional_rate * exposure_factors[region]
+
+vulnerability = (exposure_factors[region] * (1 - adaptive_capacity[region]))
+risk_score = regional_rate * vulnerability
 
 st.metric(
     "Region-adjusted warming signal",
@@ -89,13 +94,30 @@ st.caption(
 
 st.divider()
 
-# ---------------- Regional Comparison Visual ----------------
+st.subheader("🧠 AI/ML-style risk scoring")
+
+st.write(
+    """
+    This model uses a transparent scoring equation:
+    **Risk = Warming Signal × Exposure × (1 − Adaptive Capacity)**
+    """
+)
+
+score_cols = st.columns(3)
+score_cols[0].metric("Exposure factor", f"{exposure_factors[region]:.2f}")
+score_cols[1].metric("Adaptive capacity", f"{adaptive_capacity[region]:.2f}")
+score_cols[2].metric("Composite risk score", f"{risk_score:.2f}")
+
+st.caption("All values are illustrative and intended for interpretive comparison only.")
+
+st.divider()
+
 st.subheader("📊 Relative regional risk comparison")
 
 risk_df = pd.DataFrame({
     "Region": list(region_multipliers.keys()),
     "Risk Signal": [
-        global_rate * region_multipliers[r] * exposure_factors[r]
+        global_rate * region_multipliers[r] * exposure_factors[r] * (1 - adaptive_capacity[r])
         for r in region_multipliers
     ]
 })
@@ -119,7 +141,6 @@ st.caption(
 
 st.divider()
 
-# ---------------- Country Context ----------------
 if region == "South Asia":
     st.subheader("🏳️ Country context (South Asia)")
 
@@ -165,7 +186,6 @@ if region == "South Asia":
 
     st.divider()
 
-# ---------------- Risk Lens ----------------
 st.subheader("🔍 Risk lens")
 
 lens = st.radio(
@@ -189,12 +209,11 @@ else:
 
 st.divider()
 
-# ---------------- Risk Classification ----------------
 st.subheader("⚠️ Overall risk signal")
 
-if risk_score < 0.25:
+if risk_score < 0.08:
     risk = "Lower"
-elif risk_score < 0.45:
+elif risk_score < 0.18:
     risk = "Elevated"
 else:
     risk = "Severe"
@@ -216,7 +235,6 @@ else:
 
 st.divider()
 
-# ---------------- Who Is Most Affected ----------------
 st.subheader("👥 Who is most affected?")
 
 st.write(
@@ -230,7 +248,6 @@ st.write(
 
 st.divider()
 
-# ---------------- Limits & Confidence ----------------
 with st.expander("📌 Confidence & limitations"):
     st.write(
         """
