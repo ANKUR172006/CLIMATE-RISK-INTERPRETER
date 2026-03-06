@@ -1,18 +1,21 @@
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
+from genai_engine import generate_genai_brief
+
 st.set_page_config(layout="wide")
-st.title("🧭 Climate Risk Pulse")
+st.title("Climate Risk Pulse")
 
 st.write(
     """
-    The **Risk Pulse** is a novel diagnostic that fuses warming trends, volatility, and acceleration
-    into a single interpretable signal. It is not a forecast — it is an **early-warning composite**
-    to help teams spot emerging risk regimes and prioritize local action.
+    The **Risk Pulse** fuses warming trend, volatility, and acceleration
+    into a single interpretable signal. It is not a forecast - it is an
+    **early-warning composite** to help teams spot emerging risk regimes.
     """
 )
+
 
 @st.cache_data
 def load_anomaly():
@@ -25,12 +28,13 @@ def load_anomaly():
     anomaly = annual - baseline
     return anomaly
 
+
 anomaly = load_anomaly()
 
 years = anomaly.index.year.values
 values = anomaly.values
 
-st.markdown("### ⚙️ Pulse configuration")
+st.markdown("### Pulse configuration")
 
 c1, c2, c3 = st.columns(3)
 
@@ -80,28 +84,30 @@ m1.metric("Latest pulse index", f"{latest_pulse:.0f}")
 m2.metric("Rolling mean anomaly", f"{roll_mean[-1]:.2f} °C")
 m3.metric("Rolling volatility", f"{roll_std[-1]:.2f} °C")
 
-st.caption("Pulse index scales to 0–100 using recent distribution percentiles.")
+st.caption("Pulse index scales to 0-100 using recent distribution percentiles.")
 
 fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=roll_years,
-    y=pulse_index,
-    mode="lines",
-    line=dict(color="#7b1fa2", width=2),
-    name="Risk Pulse"
-))
+fig.add_trace(
+    go.Scatter(
+        x=roll_years,
+        y=pulse_index,
+        mode="lines",
+        line=dict(color="#7b1fa2", width=2),
+        name="Risk Pulse",
+    )
+)
 
 fig.update_layout(
     height=420,
     xaxis_title="Year",
     yaxis_title="Risk Pulse Index",
     template="plotly_white",
-    hovermode="x unified"
+    hovermode="x unified",
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
-st.markdown("### 🚨 Emerging risk alerts")
+st.markdown("### Emerging risk alerts")
 
 alert_threshold = st.slider("Alert threshold", 60, 95, 80)
 
@@ -117,16 +123,16 @@ else:
 
 st.divider()
 
-st.markdown("### 🗺️ Local implication mapper")
+st.markdown("### Local implication mapper")
 
 region = st.selectbox(
     "Select a region",
-    ["Global", "South Asia", "Europe", "Arctic", "Small Island States"]
+    ["Global", "South Asia", "Europe", "Arctic", "Small Island States"],
 )
 
 sector = st.selectbox(
     "Select a sector",
-    ["Public health", "Food systems", "Infrastructure", "Water security"]
+    ["Public health", "Food systems", "Infrastructure", "Water security"],
 )
 
 if latest_pulse >= 80:
@@ -136,38 +142,60 @@ elif latest_pulse >= 60:
 else:
     risk_state = "Moderate"
 
-st.write(
-    f"**Current pulse state:** {risk_state} risk signal for **{region}** in **{sector}**."
-)
+st.write(f"**Current pulse state:** {risk_state} risk signal for **{region}** in **{sector}**.")
 
 recommendations = {
     "Public health": [
         "Activate heat early-warning systems and public alerts.",
         "Expand cooling centers and occupational heat protections.",
-        "Track heat-related morbidity in near-real time."
+        "Track heat-related morbidity in near-real time.",
     ],
     "Food systems": [
         "Prioritize drought-resilient crop portfolios.",
         "Increase strategic food storage buffers.",
-        "Accelerate irrigation efficiency upgrades."
+        "Accelerate irrigation efficiency upgrades.",
     ],
     "Infrastructure": [
         "Stress-test energy and transport systems for peak heat.",
         "Fast-track retrofit plans for critical assets.",
-        "Review design standards for extreme temperature exposure."
+        "Review design standards for extreme temperature exposure.",
     ],
     "Water security": [
         "Enhance monitoring of reservoirs and groundwater drawdown.",
         "Plan demand-management programs for heat peaks.",
-        "Assess transboundary water risk coordination."
-    ]
+        "Assess transboundary water risk coordination.",
+    ],
 }
 
 st.write("**Recommended actions:**")
-
 for item in recommendations[sector]:
-    st.write(f"• {item}")
+    st.write(f"- {item}")
 
-st.caption(
-    "These recommendations are generated from pulse intensity and sector context — not deterministic forecasts."
-)
+st.caption("These recommendations are generated from pulse intensity and sector context - not deterministic forecasts.")
+
+st.divider()
+st.subheader("GenAI pulse briefing")
+
+pulse_context = {
+    "rolling_window_years": int(window),
+    "volatility_weight": round(float(volatility_weight), 2),
+    "acceleration_weight": round(float(acceleration_weight), 2),
+    "latest_pulse_index": round(float(latest_pulse), 2),
+    "alert_threshold": int(alert_threshold),
+    "alert_years_count": int(len(alerts)),
+    "risk_state": risk_state,
+    "region": region,
+    "sector": sector,
+}
+
+if st.button("Generate GenAI pulse summary"):
+    brief, mode, note = generate_genai_brief(
+        section_title="Pulse-based risk and alert summary",
+        objective="Summarize pulse alert status and immediate sector actions for local teams.",
+        context=pulse_context,
+    )
+    st.write(brief)
+    if mode == "llm":
+        st.success(note)
+    else:
+        st.info(f"Fallback mode: {note}")

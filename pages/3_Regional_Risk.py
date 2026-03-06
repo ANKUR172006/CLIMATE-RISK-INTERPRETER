@@ -2,56 +2,63 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+from genai_engine import generate_genai_brief
+from ml_engine import (
+    detect_risk_regimes,
+    forecast_with_uncertainty,
+    load_annual_anomaly,
+    people_impact_summary,
+    projection_rate_per_decade,
+    train_and_evaluate,
+)
+
 st.set_page_config(layout="wide")
-st.title("🌍 Regional & Country-Level Risk Interpretation")
+st.title("Regional and Country-Level Risk Interpretation")
 
 st.write(
     """
-    Global warming does not affect all regions equally.
-    This section **translates global temperature trends into regional and population-level risk signals**,
-    focusing on exposure, amplification, and vulnerability — not predictions.
+    This section translates global climate signals into region-level human risk meaning,
+    using AI/ML-derived warming rates plus exposure and adaptive capacity assumptions.
     """
 )
 
-st.divider()
+@st.cache_resource
+def get_ai_context():
+    anomaly = load_annual_anomaly("GlobalTemperatures.csv")
+    result = train_and_evaluate(anomaly, lags=8, test_years=20)
+    forecast_df = forecast_with_uncertainty(
+        model=result["best_model"],
+        anomaly=anomaly,
+        lags=8,
+        horizon=80,
+        residuals=result["residuals"],
+        simulations=300,
+    )
+    regimes = detect_risk_regimes(anomaly, clusters=3)
+    return anomaly, result, forecast_df, regimes
 
-st.subheader("🌡️ Global warming context")
+anomaly, result, forecast_df, regimes = get_ai_context()
+latest_regime = str(regimes.iloc[-1]["regime"])
 
-global_rate = st.slider(
-    "Observed global warming rate (°C per decade)",
-    0.1, 0.6, 0.25, 0.01
-)
+st.subheader("Global warming context")
+use_ai_rate = st.checkbox("Use AI-estimated warming rate", value=True)
 
-st.caption(
-    "This value reflects historical global trends derived from observed temperature records."
-)
+horizon = st.selectbox("Select interpretation horizon", ["2030s", "2050s", "2100"])
+target_year = {"2030s": 2035, "2050s": 2050, "2100": 2100}[horizon]
+ai_rate = projection_rate_per_decade(anomaly, forecast_df, target_year=target_year)
 
-st.divider()
+if use_ai_rate:
+    global_rate = ai_rate
+else:
+    global_rate = st.slider("Manual global warming rate (C per decade)", 0.1, 0.8, 0.25, 0.01)
 
-st.subheader("⏳ Impact time horizon")
-
-horizon = st.selectbox(
-    "Select interpretation horizon",
-    ["2030s", "2050s", "2100"]
-)
-
-st.caption(
-    "Risk interpretation depends on time horizon, even without explicit forecasting."
-)
-
-st.divider()
-
-st.subheader("🗺️ Regional amplification")
+c1, c2 = st.columns(2)
+c1.metric("Rate used", f"{global_rate:.2f} C/decade")
+c2.metric("Latest ML regime", latest_regime)
 
 region = st.selectbox(
     "Select region",
-    [
-        "Global Average",
-        "South Asia",
-        "Arctic",
-        "Europe",
-        "Small Island States"
-    ]
+    ["Global Average", "South Asia", "Arctic", "Europe", "Small Island States"],
 )
 
 region_multipliers = {
@@ -59,7 +66,7 @@ region_multipliers = {
     "South Asia": 1.1,
     "Arctic": 2.5,
     "Europe": 1.4,
-    "Small Island States": 1.0
+    "Small Island States": 1.0,
 }
 
 exposure_factors = {
@@ -67,7 +74,7 @@ exposure_factors = {
     "South Asia": 1.3,
     "Arctic": 0.6,
     "Europe": 1.1,
-    "Small Island States": 1.5
+    "Small Island States": 1.5,
 }
 
 adaptive_capacity = {
@@ -75,52 +82,39 @@ adaptive_capacity = {
     "South Asia": 0.6,
     "Arctic": 0.7,
     "Europe": 0.9,
-    "Small Island States": 0.5
+    "Small Island States": 0.5,
 }
 
 regional_rate = global_rate * region_multipliers[region]
+vulnerability = exposure_factors[region] * (1 - adaptive_capacity[region])
 
-vulnerability = (exposure_factors[region] * (1 - adaptive_capacity[region]))
-risk_score = regional_rate * vulnerability
+regime_factor = {"Lower": 0.9, "Elevated": 1.1, "High": 1.3}
+risk_score = regional_rate * vulnerability * regime_factor.get(latest_regime, 1.1)
 
-st.metric(
-    "Region-adjusted warming signal",
-    f"{regional_rate:.2f} °C per decade"
-)
+st.metric("Region-adjusted warming signal", f"{regional_rate:.2f} C/decade")
 
-st.caption(
-    "Regional amplification reflects geography and climate feedbacks; exposure reflects population and system vulnerability."
-)
+st.subheader("AI/ML-supported risk scoring")
+st.write("Risk = Warming Signal x Exposure x (1 - Adaptive Capacity) x Regime Factor")
 
-st.divider()
-
-st.subheader("🧠 AI/ML-style risk scoring")
-
-st.write(
-    """
-    This model uses a transparent scoring equation:
-    **Risk = Warming Signal × Exposure × (1 − Adaptive Capacity)**
-    """
-)
-
-score_cols = st.columns(3)
-score_cols[0].metric("Exposure factor", f"{exposure_factors[region]:.2f}")
+score_cols = st.columns(4)
+score_cols[0].metric("Exposure", f"{exposure_factors[region]:.2f}")
 score_cols[1].metric("Adaptive capacity", f"{adaptive_capacity[region]:.2f}")
-score_cols[2].metric("Composite risk score", f"{risk_score:.2f}")
+score_cols[2].metric("Regime factor", f"{regime_factor.get(latest_regime, 1.1):.2f}")
+score_cols[3].metric("Composite score", f"{risk_score:.2f}")
 
-st.caption("All values are illustrative and intended for interpretive comparison only.")
-
-st.divider()
-
-st.subheader("📊 Relative regional risk comparison")
-
-risk_df = pd.DataFrame({
-    "Region": list(region_multipliers.keys()),
-    "Risk Signal": [
-        global_rate * region_multipliers[r] * exposure_factors[r] * (1 - adaptive_capacity[r])
-        for r in region_multipliers
-    ]
-})
+risk_df = pd.DataFrame(
+    {
+        "Region": list(region_multipliers.keys()),
+        "Risk Signal": [
+            global_rate
+            * region_multipliers[r]
+            * exposure_factors[r]
+            * (1 - adaptive_capacity[r])
+            * regime_factor.get(latest_regime, 1.1)
+            for r in region_multipliers
+        ],
+    }
+)
 
 fig = px.bar(
     risk_df,
@@ -128,89 +122,29 @@ fig = px.bar(
     y="Risk Signal",
     color="Risk Signal",
     color_continuous_scale="Reds",
-    title="Relative Climate Risk Signals by Region"
+    title="AI-informed relative climate risk by region",
 )
-
 fig.update_layout(height=420)
-
-st.plotly_chart(fig, use_container_width=True)
-
-st.caption(
-    "This comparison shows **relative risk signals**, not absolute temperature outcomes."
-)
-
-st.divider()
+st.plotly_chart(fig, width="stretch")
 
 if region == "South Asia":
-    st.subheader("🏳️ Country context (South Asia)")
-
-    country = st.selectbox(
-        "Select country",
-        ["India", "Pakistan", "Bangladesh", "Sri Lanka"]
-    )
+    st.subheader("Country context (South Asia)")
+    country = st.selectbox("Select country", ["India", "Pakistan", "Bangladesh", "Sri Lanka"])
 
     country_profiles = {
-        "India": {
-            "note": "High population exposure and increasing humid heat stress.",
-            "Heat stress": "High",
-            "Food systems": "High",
-            "Coastal exposure": "Medium"
-        },
-        "Pakistan": {
-            "note": "Water scarcity intensifies heat-related impacts.",
-            "Heat stress": "High",
-            "Food systems": "Medium",
-            "Coastal exposure": "Low"
-        },
-        "Bangladesh": {
-            "note": "Low elevation and dense population increase flood sensitivity.",
-            "Heat stress": "Medium",
-            "Food systems": "High",
-            "Coastal exposure": "High"
-        },
-        "Sri Lanka": {
-            "note": "Moderate warming with agriculture-sensitive impacts.",
-            "Heat stress": "Medium",
-            "Food systems": "Medium",
-            "Coastal exposure": "Medium"
-        }
+        "India": {"note": "High population exposure and rising humid heat stress."},
+        "Pakistan": {"note": "Water scarcity amplifies heat and livelihood stress."},
+        "Bangladesh": {"note": "Flood and coastal exposure raise compounding risk."},
+        "Sri Lanka": {"note": "Agriculture-sensitive economy increases seasonal vulnerability."},
     }
 
-    profile = country_profiles[country]
+    st.write(f"Context note: {country_profiles[country]['note']}")
 
-    st.write(f"**Context note:** {profile['note']}")
+st.subheader("Risk lens")
+lens = st.radio("View risk through:", ["Human health", "Food systems", "Infrastructure"], horizontal=True)
+st.info(people_impact_summary(latest_regime, lens))
 
-    cols = st.columns(3)
-    for col, (k, v) in zip(cols, list(profile.items())[1:]):
-        col.metric(k, v)
-
-    st.divider()
-
-st.subheader("🔍 Risk lens")
-
-lens = st.radio(
-    "View risk through:",
-    ["Human health", "Food systems", "Infrastructure"],
-    horizontal=True
-)
-
-if lens == "Human health":
-    st.write(
-        "Focuses on heat stress, mortality risk, and vulnerable populations such as elderly and outdoor workers."
-    )
-elif lens == "Food systems":
-    st.write(
-        "Focuses on crop yield stability, rainfall variability, and seasonal disruption."
-    )
-else:
-    st.write(
-        "Focuses on urban systems, energy demand, transport stress, and infrastructure resilience."
-    )
-
-st.divider()
-
-st.subheader("⚠️ Overall risk signal")
-
+st.subheader("Overall risk signal")
 if risk_score < 0.08:
     risk = "Lower"
 elif risk_score < 0.18:
@@ -218,49 +152,39 @@ elif risk_score < 0.18:
 else:
     risk = "Severe"
 
-st.write(f"**Risk level:** {risk}")
+st.write(f"Risk level: {risk}")
 
 if risk == "Severe":
-    st.error(
-        "Observed warming signals may exceed adaptive capacity for exposed populations."
-    )
+    st.error("AI-informed signals suggest adaptive capacity may be exceeded in exposed groups.")
 elif risk == "Elevated":
-    st.warning(
-        "Warming trends suggest increasing stress on human and natural systems."
-    )
+    st.warning("AI-informed signals indicate increasing stress on people and critical systems.")
 else:
-    st.success(
-        "Relative risk remains lower, but long-term monitoring is essential."
-    )
+    st.success("Risk is lower relative to peers, but sustained monitoring remains necessary.")
+
+st.caption("This page uses AI/ML rate estimation and unsupervised regime classification for clearer people-focused interpretation.")
 
 st.divider()
+st.subheader("GenAI regional brief")
 
-st.subheader("👥 Who is most affected?")
+regional_context = {
+    "region": region,
+    "horizon": horizon,
+    "global_rate_c_per_decade": round(float(global_rate), 3),
+    "regional_rate_c_per_decade": round(float(regional_rate), 3),
+    "risk_score": round(float(risk_score), 3),
+    "latest_regime": latest_regime,
+    "risk_lens": lens,
+    "risk_level": risk,
+}
 
-st.write(
-    """
-    • Outdoor and informal workers  
-    • Elderly populations  
-    • Small-scale farmers  
-    • Coastal and low-lying communities  
-    """
-)
-
-st.divider()
-
-with st.expander("📌 Confidence & limitations"):
-    st.write(
-        """
-        • Regional values are **risk translations**, not local temperature forecasts  
-        • Country profiles reflect exposure and vulnerability, not precise outcomes  
-        • Results indicate **direction and relative magnitude**, not certainty  
-        """
+if st.button("Generate GenAI regional summary"):
+    brief, mode, note = generate_genai_brief(
+        section_title="Regional climate-risk summary",
+        objective="Summarize regional risk and provide practical actions for local planners.",
+        context=regional_context,
     )
-
-st.info(
-    "These regional risk signals provide the analytical foundation for the **Policy & Adaptation Implications** section."
-)
-
-st.caption(
-    "Responsible climate risk communication prioritizes transparency over precision."
-)
+    st.write(brief)
+    if mode == "llm":
+        st.success(note)
+    else:
+        st.info(f"Fallback mode: {note}")

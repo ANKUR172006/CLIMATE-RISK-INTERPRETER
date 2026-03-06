@@ -1,0 +1,11 @@
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
+baseUrlPath = ""
+enableCORS = false
+enableXsrfProtection = false
+
+[client]
+showSidebarNavigation = true

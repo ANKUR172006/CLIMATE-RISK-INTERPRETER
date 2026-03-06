@@ -1,0 +1,17 @@
+﻿# Python cache
+__pycache__/
+*.pyc
+
+# Local Streamlit secrets (never commit real keys)
+.streamlit/secrets.toml
+
+# Large media/artifacts not required for app deployment
+*.mp4
+*.wav
+*.mp3
+video_assets/
+streamlit_video_assets/
+
+# Generated docs/artifacts
+*.pdf
+debug_home.png

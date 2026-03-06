@@ -130,7 +130,7 @@ fig.update_layout(
     template="plotly_white"
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 st.markdown("### 📊 Key Signals")
 
@@ -180,7 +180,7 @@ if len(years) > window:
         yaxis_title="Warming rate (°C/decade)",
         template="plotly_white"
     )
-    st.plotly_chart(roll_fig, use_container_width=True)
+    st.plotly_chart(roll_fig, width="stretch")
 else:
     st.warning("Not enough data to compute rolling rates for the selected window.")
 
@@ -196,7 +196,7 @@ df_dec = anomaly.to_frame("Anomaly")
 df_dec["Decade"] = (df_dec.index.year // 10) * 10
 decadal = df_dec.groupby("Decade").mean().round(2)
 
-st.dataframe(decadal, use_container_width=True)
+st.dataframe(decadal, width="stretch")
 
 st.caption(
     "Decadal averages remove year-to-year noise and reveal long-term structural change."
@@ -237,7 +237,7 @@ with st.expander("🌐 Seasonal Structure — 3D Climate Surface"):
         )
     )
 
-    st.plotly_chart(fig3d, use_container_width=True)
+    st.plotly_chart(fig3d, width="stretch")
 
 st.caption(
     "Seasonal cycles remain — but they now occur on top of a higher and warmer baseline."

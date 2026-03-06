@@ -1,36 +1,38 @@
-import streamlit as st
+﻿import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 
+from genai_engine import generate_genai_brief
+
 st.set_page_config(layout="wide")
-st.title("🧭 Scenario Explorer")
+st.title("Scenario Explorer")
 
 st.write(
     """
     Explore illustrative warming pathways using a simple Monte Carlo generator.
-    Scenarios are **not predictions** — they help understand ranges and thresholds.
+    Scenarios are **not predictions** - they help understand ranges and thresholds.
     """
 )
 
 rate = st.slider(
     "Assumed future warming rate (°C per decade)",
-    0.0, 0.6, 0.25, 0.01
+    0.0,
+    0.6,
+    0.25,
+    0.01,
 )
 
 rate_uncertainty = st.slider(
-    "Rate uncertainty (± °C per decade)",
-    0.0, 0.2, 0.05, 0.01
+    "Rate uncertainty (+/- °C per decade)",
+    0.0,
+    0.2,
+    0.05,
+    0.01,
 )
 
-years = st.slider(
-    "Years into the future",
-    10, 80, 30
-)
+years = st.slider("Years into the future", 10, 80, 30)
 
-samples = st.slider(
-    "Number of simulations",
-    200, 2000, 600, 100
-)
+samples = st.slider("Number of simulations", 200, 2000, 600, 100)
 
 np.random.seed(7)
 
@@ -51,10 +53,10 @@ fig.update_layout(
     height=420,
     xaxis_title="Projected additional warming (°C)",
     yaxis_title="Simulation count",
-    template="plotly_white"
+    template="plotly_white",
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 if p90 > 1.5:
     st.error("High likelihood of crossing critical climate thresholds.")
@@ -64,3 +66,28 @@ else:
     st.success("Lower-impact pathway if sustained.")
 
 st.caption("Scenarios are illustrative, not precise forecasts.")
+
+st.divider()
+st.subheader("GenAI scenario interpretation")
+
+scenario_context = {
+    "assumed_rate_c_per_decade": round(float(rate), 3),
+    "rate_uncertainty_c_per_decade": round(float(rate_uncertainty), 3),
+    "years_forward": int(years),
+    "simulations": int(samples),
+    "p10_c": round(float(p10), 3),
+    "p50_c": round(float(p50), 3),
+    "p90_c": round(float(p90), 3),
+}
+
+if st.button("Generate GenAI scenario summary"):
+    brief, mode, note = generate_genai_brief(
+        section_title="Scenario interpretation note",
+        objective="Explain scenario spread, threshold risk, and immediate no-regret actions.",
+        context=scenario_context,
+    )
+    st.write(brief)
+    if mode == "llm":
+        st.success(note)
+    else:
+        st.info(f"Fallback mode: {note}")

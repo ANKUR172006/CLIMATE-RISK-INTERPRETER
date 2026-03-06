@@ -1,24 +1,42 @@
-# 🌍 Climate Risk Interpreter
+﻿## 🌡 Climate Trends, Risk Signals & Local Implications
 
 ### Theme
 Climate Analytics | Sustainability | Public Policy
 
+### Context
+Climate datasets are vast, but communities and governments struggle to convert them into localized, actionable understanding of risk and long-term change.
+
 ### Problem
-Global climate datasets are difficult to interpret for real-world decision-making. This project translates long-term climate trends into interpretable risk signals and policy-relevant insights.
+Create a climate trend and risk interpretation workflow that helps users understand how environmental patterns are changing and what those changes imply for regions and populations.
 
-### Features
-- Long-term warming trend detection with uncertainty bands
-- Baseline-based temperature anomalies (1850–1900)
-- Change-point scanning for acceleration signals
-- Regional risk amplification with exposure + adaptive capacity
-- Scenario explorer with Monte Carlo ranges
-- **Risk Pulse** early-warning composite index for emerging risk regimes
-- Policy-oriented summaries with transparent, rule-based guidance
+### What the Solution Should Enable
+- Detection of long-term warming or variability trends  
+- Regional comparison of climate shifts  
+- Forward-looking projections with uncertainty  
+- Clear, responsible communication of risks  
 
-### Tech Stack
-- Python
-- Streamlit
-- Pandas, NumPy, Plotly
+### Open Design Space
+Teams may explore:
+- Risk indices or composite indicators  
+- Regional or population exposure analysis  
+- Policy-oriented summaries  
+- Visual storytelling and reports  
 
-### Disclaimer
-This tool provides **interpretive insights**, not deterministic climate predictions
+### Evaluation Focus
+- Real-world relevance and responsibility  
+- Analytical depth  
+- Clarity for non-technical stakeholders  
+
+---
+
+## Climate Intelligence Implementation in This Prototype
+
+- Supervised climate-anomaly forecasting with lag, trend, momentum, and volatility features.
+- Stronger model selection using time-series cross-validation plus holdout scoring.
+- Candidate models: Ridge, ElasticNet, RandomForest, GradientBoosting.
+- Uncertainty intervals using residual-bootstrap simulation (P10/P50/P90).
+- Unsupervised regime detection (KMeans) for Lower/Elevated/High risk states.
+- Explainability via feature influence outputs from the selected model.
+- Existing pages now consume AI/ML signals (projected rate + regime) for regional and policy interpretation.
+
+

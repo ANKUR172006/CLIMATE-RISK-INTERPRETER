@@ -4,7 +4,7 @@ import numpy as np
 
 st.set_page_config(
     page_title="Climate Trends, Risk Signals & Local Implications",
-    page_icon="🌍",
+    page_icon=":earth_africa:",
     layout="wide"
 )
 
@@ -49,7 +49,7 @@ st.markdown(
         <span class="pill">Policy Insight</span>
         <h1>Climate Trends, Risk Signals & Local Implications</h1>
         <p>
-            Climate data exists in abundance — understanding does not. This tool translates
+            Climate data exists in abundance - understanding does not. This tool translates
             global temperature history into <strong>interpretable risk signals</strong> and
             local implications for decision-makers.
         </p>
@@ -70,7 +70,7 @@ with c1:
         **Problem framing**
         - Climate datasets are vast, but communities struggle to extract local meaning.
         - Trend signals are often conflated with forecasts, reducing trust.
-        - Risk decisions require *direction, magnitude, and uncertainty* — not just charts.
+        - Risk decisions require *direction, magnitude, and uncertainty* - not just charts.
         """
     )
 
@@ -93,7 +93,7 @@ with c2:
 
         **Typical workflow**
         1. Understand global shift
-        2. Detect acceleration
+        2. Assess composite climate risk
         3. Translate to regional exposure
         4. Explore scenarios
         5. Derive policy actions
@@ -105,17 +105,17 @@ st.divider()
 st.subheader("What this tool enables")
 st.write(
     """
-    • Detection of long-term warming trends  
-    • Identification of recent acceleration  
-    • Regional amplification of risk  
-    • Scenario-based interpretation with uncertainty  
-    • Clear, responsible communication of risk signals  
+    - Detection of long-term warming trends  
+    - Identification of changing risk intensity  
+    - Regional amplification of risk  
+    - Scenario-based interpretation with uncertainty  
+    - Clear, responsible communication of risk signals  
     """
 )
 
 st.divider()
 
-st.subheader("AI + ML approach (transparent, explainable)")
+st.subheader("Climate Intelligence approach (transparent, explainable)")
 
 st.write(
     """
@@ -150,12 +150,12 @@ recent_mean = anomaly.tail(10).mean()
 
 m1, m2, m3 = st.columns(3)
 
-m1.metric("Latest anomaly", f"{latest_anomaly:.2f} °C")
-m2.metric("Recent 10-year mean", f"{recent_mean:.2f} °C")
+m1.metric("Latest anomaly", f"{latest_anomaly:.2f} C")
+m2.metric("Recent 10-year mean", f"{recent_mean:.2f} C")
 m3.metric("Years analyzed", f"{len(anomaly)}")
 
-st.caption("Baseline uses 1850–1900 mean temperature.")
+st.caption("Baseline uses 1850-1900 mean temperature.")
 
 st.success(
-    "➡️ Start with **Global Trends** to see the historical baseline, then move to **Recent Acceleration** for the AI/ML change-point analysis."
+    "Start with **Global Trends** to see the historical baseline, then move to **Regional Risk** and **Risk Pulse** for AI/ML-supported interpretation."
 )
