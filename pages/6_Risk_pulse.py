@@ -29,10 +29,11 @@ def load_anomaly():
 
 
 def _safe_zscore(values: np.ndarray) -> np.ndarray:
-    std = float(np.std(values))
+    clean = np.nan_to_num(np.asarray(values, dtype=float), nan=0.0, posinf=0.0, neginf=0.0)
+    std = float(np.std(clean))
     if std == 0:
-        return np.zeros_like(values, dtype=float)
-    return (values - float(np.mean(values))) / std
+        return np.zeros_like(clean, dtype=float)
+    return (clean - float(np.mean(clean))) / std
 
 
 anomaly = load_anomaly()
@@ -58,15 +59,13 @@ if len(values) <= window:
 
 rolling_mean = pd.Series(values).rolling(window=window).mean().to_numpy()
 rolling_std = pd.Series(values).rolling(window=window).std().to_numpy()
-trend_rate = np.gradient(rolling_mean)
-acceleration = np.gradient(trend_rate)
 
-valid_mask = ~np.isnan(rolling_mean)
+valid_mask = ~np.isnan(rolling_mean) & ~np.isnan(rolling_std)
 roll_years = years[valid_mask]
 roll_mean = rolling_mean[valid_mask]
 roll_std = rolling_std[valid_mask]
-roll_rate = trend_rate[valid_mask]
-roll_acc = acceleration[valid_mask]
+roll_rate = np.gradient(roll_mean)
+roll_acc = np.gradient(roll_rate)
 
 mean_score = _safe_zscore(roll_mean)
 vol_score = _safe_zscore(roll_std)
