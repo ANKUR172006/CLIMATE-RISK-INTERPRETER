@@ -49,9 +49,9 @@ st.markdown(
         <span class="pill">Policy Insight</span>
         <h1>Climate Trends, Risk Signals & Local Implications</h1>
         <p>
-            Climate data exists in abundance - understanding does not. This tool translates
-            global temperature history into <strong>interpretable risk signals</strong> and
-            local implications for decision-makers.
+            Climate data exists in abundance - understanding does not. This prototype translates
+            a historical global temperature archive into <strong>interpretable climate signals</strong>
+            and structured local implications for analysis.
         </p>
     </div>
     """,
@@ -70,7 +70,7 @@ with c1:
         **Problem framing**
         - Climate datasets are vast, but communities struggle to extract local meaning.
         - Trend signals are often conflated with forecasts, reducing trust.
-        - Risk decisions require *direction, magnitude, and uncertainty* - not just charts.
+        - Historical climate interpretation still requires *direction, magnitude, and uncertainty* - not just charts.
         """
     )
 
@@ -92,11 +92,11 @@ with c2:
         - Sustainability & policy analysts
 
         **Typical workflow**
-        1. Understand global shift
-        2. Assess composite climate risk
+        1. Understand the historical global shift
+        2. Assess composite climate signals
         3. Translate to regional exposure
-        4. Explore scenarios
-        5. Derive policy actions
+        4. Explore illustrative scenarios
+        5. Derive interpretation notes
         """
     )
 
@@ -105,11 +105,11 @@ st.divider()
 st.subheader("What this tool enables")
 st.write(
     """
-    - Detection of long-term warming trends  
-    - Identification of changing risk intensity  
-    - Regional amplification of risk  
+    - Detection of long-term temperature trends  
+    - Identification of changing climate signal intensity  
+    - Regional comparison of relative exposure  
     - Scenario-based interpretation with uncertainty  
-    - Clear, responsible communication of risk signals  
+    - Clear, responsible communication of historical climate signals  
     """
 )
 
@@ -120,7 +120,7 @@ st.subheader("Climate Intelligence approach (transparent, explainable)")
 st.write(
     """
     This prototype integrates **explainable ML techniques** without black-box opacity:
-    - **Trend regression & change-point scans** to detect acceleration
+    - **Trend regression & change-point scans** to detect shifts within the historical record
     - **Bootstrap uncertainty bands** to convey confidence
     - **Risk scoring models** that combine exposure and adaptive capacity
     """
@@ -150,12 +150,12 @@ recent_mean = anomaly.tail(10).mean()
 
 m1, m2, m3 = st.columns(3)
 
-m1.metric("Latest anomaly", f"{latest_anomaly:.2f} C")
-m2.metric("Recent 10-year mean", f"{recent_mean:.2f} C")
+m1.metric("Final-year anomaly (1900)", f"{latest_anomaly:.2f} C")
+m2.metric("Last 10 years mean (1891-1900)", f"{recent_mean:.2f} C")
 m3.metric("Years analyzed", f"{len(anomaly)}")
 
-st.caption("Baseline uses 1850-1900 mean temperature.")
+st.caption("Dataset spans 1750-1900. Baseline uses the 1850-1900 mean temperature.")
 
 st.success(
-    "Start with **Global Trends** to see the historical baseline, then move to **Regional Risk** and **Risk Pulse** for AI/ML-supported interpretation."
+    "Start with **Global Trends** to inspect the historical record, then move to **Regional Risk** and **Risk Pulse** for model-based interpretation of this archive."
 )

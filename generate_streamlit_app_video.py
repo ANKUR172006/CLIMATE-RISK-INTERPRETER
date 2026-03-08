@@ -74,24 +74,24 @@ SCENES_BY_LABEL = {
         {
             "scroll_ratio": 0.0,
             "narration": (
-                "Regional Risk converts global warming signal into local interpretation. "
-                "You can use AI estimated rate or a manual rate, then select horizon and region."
+                "Regional Risk and Policy converts the archive signal into regional interpretation. "
+                "You can use a model estimated rate or a manual rate, then select horizon and region."
             ),
             "wait_plot": False,
         },
         {
             "scroll_ratio": 0.4,
             "narration": (
-                "The composite score combines warming signal, exposure, adaptive capacity, and current machine learning regime. "
+                "The composite score combines archive signal, exposure, adaptive capacity, and final machine learning regime. "
                 "This bar chart compares relative climate pressure across regions."
             ),
             "wait_plot": True,
         },
         {
-            "scroll_ratio": 0.82,
+            "scroll_ratio": 0.86,
             "narration": (
-                "The risk lens at the bottom translates model state into people focused insight for health, food systems, and infrastructure. "
-                "Final risk level is communicated in plain language."
+                "Lower on the page, the impact lens and action section translate model state into people focused insight and practical policy actions. "
+                "This now combines regional interpretation and response planning in one flow."
             ),
             "wait_plot": False,
         },
@@ -114,46 +114,27 @@ SCENES_BY_LABEL = {
             "wait_plot": True,
         },
     ],
-    "policy implications": [
-        {
-            "scroll_ratio": 0.0,
-            "narration": (
-                "Policy Implications summarizes model quality, projected warming rate, and latest regime in one view. "
-                "This gives policy teams an immediate climate pressure snapshot."
-            ),
-            "wait_plot": False,
-        },
-        {
-            "scroll_ratio": 0.55,
-            "narration": (
-                "By changing planning context, the page gives urgency tiered actions for heat, flood, food, and infrastructure. "
-                "These are decision support prompts, not automatic policy decisions."
-            ),
-            "wait_plot": False,
-        },
-    ],
     "risk pulse": [
         {
             "scroll_ratio": 0.0,
             "narration": (
-                "Risk Pulse is an early warning composite. "
-                "You can tune rolling window, volatility weight, and acceleration weight to shape the pulse sensitivity."
+                "Risk Pulse is the signal triage page. "
+                "You can tune rolling window, volatility weight, and acceleration weight to shape the pulse index."
             ),
             "wait_plot": False,
         },
         {
             "scroll_ratio": 0.42,
             "narration": (
-                "This timeline shows pulse index dynamics on a zero to one hundred scale. "
-                "Alert threshold control highlights years where composite risk intensity is elevated."
+                "The timeline shows pulse dynamics, while the turning point detector identifies where the archive changed most sharply. "
+                "This makes the page diagnostic, not just descriptive."
             ),
             "wait_plot": True,
         },
         {
-            "scroll_ratio": 0.82,
+            "scroll_ratio": 0.76,
             "narration": (
-                "At the bottom, region and sector mapping converts pulse state into actionable recommendations. "
-                "This closes the loop from signal detection to practical response."
+                "Lower on the page, component breakdown and era comparison explain why the pulse changed and which historical period carried stronger signal."
             ),
             "wait_plot": False,
         },
@@ -162,8 +143,8 @@ SCENES_BY_LABEL = {
         {
             "scroll_ratio": 0.0,
             "narration": (
-                "The AI and ML Prototype page exposes the full modeling workflow. "
-                "You can configure lag features, holdout window, forecast horizon, and uncertainty simulations."
+                "Climate Intelligence Engine is the advanced workbench. "
+                "You can configure lag features, holdout window, extrapolation horizon, and uncertainty simulations."
             ),
             "wait_plot": False,
         },

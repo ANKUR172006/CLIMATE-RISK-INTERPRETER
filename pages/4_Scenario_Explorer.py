@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 
@@ -9,13 +9,13 @@ st.title("Scenario Explorer")
 
 st.write(
     """
-    Explore illustrative warming pathways using a simple Monte Carlo generator.
-    Scenarios are **not predictions** - they help understand ranges and thresholds.
+    Explore illustrative temperature pathways using a simple Monte Carlo generator.
+    Scenarios are **not predictions** - they help understand ranges and thresholds beyond the 1750-1900 archive.
     """
 )
 
 rate = st.slider(
-    "Assumed future warming rate (°C per decade)",
+    "Assumed extrapolated rate (C per decade)",
     0.0,
     0.6,
     0.25,
@@ -23,14 +23,14 @@ rate = st.slider(
 )
 
 rate_uncertainty = st.slider(
-    "Rate uncertainty (+/- °C per decade)",
+    "Rate uncertainty (+/- C per decade)",
     0.0,
     0.2,
     0.05,
     0.01,
 )
 
-years = st.slider("Years into the future", 10, 80, 30)
+years = st.slider("Years beyond the archive end", 10, 80, 30)
 
 samples = st.slider("Number of simulations", 200, 2000, 600, 100)
 
@@ -43,15 +43,15 @@ p10, p50, p90 = np.percentile(projected, [10, 50, 90])
 
 m1, m2, m3 = st.columns(3)
 
-m1.metric("10th percentile", f"{p10:.2f} °C")
-m2.metric("Median", f"{p50:.2f} °C")
-m3.metric("90th percentile", f"{p90:.2f} °C")
+m1.metric("10th percentile", f"{p10:.2f} C")
+m2.metric("Median", f"{p50:.2f} C")
+m3.metric("90th percentile", f"{p90:.2f} C")
 
 fig = go.Figure()
 fig.add_trace(go.Histogram(x=projected, nbinsx=30, marker_color="#42a5f5"))
 fig.update_layout(
     height=420,
-    xaxis_title="Projected additional warming (°C)",
+    xaxis_title="Projected additional anomaly (C)",
     yaxis_title="Simulation count",
     template="plotly_white",
 )
@@ -59,13 +59,13 @@ fig.update_layout(
 st.plotly_chart(fig, width="stretch")
 
 if p90 > 1.5:
-    st.error("High likelihood of crossing critical climate thresholds.")
+    st.error("High likelihood of crossing the selected illustrative threshold range.")
 elif p50 > 1.0:
-    st.warning("High-impact warming range.")
+    st.warning("High-impact extrapolated range.")
 else:
-    st.success("Lower-impact pathway if sustained.")
+    st.success("Lower-impact illustrative pathway if sustained.")
 
-st.caption("Scenarios are illustrative, not precise forecasts.")
+st.caption("Scenarios are illustrative extrapolations, not precise forecasts.")
 
 st.divider()
 st.subheader("GenAI scenario interpretation")
@@ -83,7 +83,7 @@ scenario_context = {
 if st.button("Generate GenAI scenario summary"):
     brief, mode, note = generate_genai_brief(
         section_title="Scenario interpretation note",
-        objective="Explain scenario spread, threshold risk, and immediate no-regret actions.",
+        objective="Explain scenario spread, threshold risk, and no-regret actions while noting that the inputs are illustrative extrapolations.",
         context=scenario_context,
     )
     st.write(brief)

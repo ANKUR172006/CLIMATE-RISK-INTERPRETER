@@ -326,6 +326,6 @@ def people_impact_summary(regime: str, lens: str) -> str:
 def build_ai_brief(best_model_name: str, best_rmse: float, latest_regime: str, p50_2035: float) -> str:
     return (
         f"AI/ML summary: Best model = {best_model_name}; holdout RMSE = {best_rmse:.3f} C. "
-        f"Latest unsupervised regime = '{latest_regime}'. "
-        f"Median projected anomaly around 2035 = {p50_2035:.2f} C (vs 1850-1900 baseline)."
+        f"Final archive regime = '{latest_regime}'. "
+        f"Illustrative median anomaly around 2035 = {p50_2035:.2f} C (vs 1850-1900 baseline), based on model extrapolation beyond the 1750-1900 record."
     )

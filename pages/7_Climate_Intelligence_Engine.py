@@ -16,11 +16,11 @@ st.title("Climate Intelligence Engine")
 
 st.write(
     """
-    Transparent ML + GenAI workflow for climate decision support:
+    This is the advanced analysis workbench for archive-based climate interpretation:
     - train and compare models,
     - quantify uncertainty,
     - detect risk regimes,
-    - generate stakeholder-ready briefings.
+    - generate stakeholder-ready briefings from a 1750-1900 temperature archive.
     """
 )
 
@@ -64,7 +64,7 @@ with c1:
 with c2:
     test_years = st.slider("Holdout years", 10, 40, 20)
 with c3:
-    horizon = st.slider("Forecast horizon", 10, 60, 25)
+    horizon = st.slider("Extrapolation horizon", 10, 60, 25)
 with c4:
     sims = st.slider("Uncertainty simulations", 200, 1200, 400, 100)
 
@@ -103,8 +103,8 @@ st.markdown("### Executive KPI Strip")
 k1, k2, k3, k4, k5 = st.columns(5)
 k1.metric("Best model", best_name)
 k2.metric("RMSE", f"{best_rmse:.3f} C")
-k3.metric("Current regime", str(latest["regime"]))
-k4.metric("P50 anomaly 2035", f"{p50_2035:.2f} C")
+k3.metric("Final archive regime", str(latest["regime"]))
+k4.metric("Illustrative P50 anomaly 2035", f"{p50_2035:.2f} C")
 k5.metric("Model confidence", confidence)
 
 current_snapshot = {
@@ -120,7 +120,7 @@ if prev is not None:
     d_p35 = p50_2035 - prev["p50_2035"]
     st.caption(
         f"Since last run: model {prev['best_model']} -> {best_name}, "
-        f"RMSE delta {d_rmse:+.3f}, 2035 projection delta {d_p35:+.3f} C, "
+        f"RMSE delta {d_rmse:+.3f}, 2035 extrapolation delta {d_p35:+.3f} C, "
         f"regime {prev['regime']} -> {current_snapshot['regime']}"
     )
 st.session_state.engine_prev_snapshot = current_snapshot
@@ -172,10 +172,10 @@ if view_mode == "Expert":
         fig_imp.update_layout(height=400, xaxis_title="Relative influence", yaxis_title="Feature", template="plotly_white")
         st.plotly_chart(fig_imp, width="stretch")
 
-st.markdown("### Forecast with uncertainty")
+st.markdown("### Extrapolation with uncertainty")
 fig_fc = go.Figure()
 fig_fc.add_trace(go.Scatter(x=anomaly.index.year, y=anomaly.values, mode="lines", name="Historical anomaly", line=dict(color="#1e88e5", width=2)))
-fig_fc.add_trace(go.Scatter(x=forecast_df["year"], y=forecast_df["p50"], mode="lines", name="Median forecast", line=dict(color="#d81b60", width=2)))
+fig_fc.add_trace(go.Scatter(x=forecast_df["year"], y=forecast_df["p50"], mode="lines", name="Median extrapolation", line=dict(color="#d81b60", width=2)))
 fig_fc.add_trace(
     go.Scatter(
         x=list(forecast_df["year"]) + list(forecast_df["year"])[::-1],
@@ -189,6 +189,7 @@ fig_fc.add_trace(
 )
 fig_fc.update_layout(height=420, xaxis_title="Year", yaxis_title="Anomaly (C)", template="plotly_white")
 st.plotly_chart(fig_fc, width="stretch")
+st.caption("Years beyond 1900 are model extrapolations from the historical archive, not observed temperatures.")
 
 if view_mode == "Expert":
     st.markdown("### Risk-regime detection")
@@ -220,7 +221,7 @@ with cx2:
     if st.button("Generate Executive 3-Block"):
         brief, mode, note = generate_genai_brief(
             section_title="Executive climate summary",
-            objective="Return exactly 3 titled blocks: Current Signal, Key Risks, Priority Actions.",
+            objective="Return exactly 3 titled blocks: Archive Signal, Key Risks, Priority Actions. Make clear that post-1900 values are extrapolations.",
             context=context,
             min_words=min_w,
             max_words=max_w,
@@ -231,7 +232,7 @@ with cx3:
     if st.button("Generate Public Message"):
         brief, mode, note = generate_genai_brief(
             section_title="Public communication draft",
-            objective="Explain findings for citizens in clear language and include uncertainty caution.",
+            objective="Explain findings for citizens in clear language, include uncertainty caution, and state that post-1900 values are extrapolations.",
             context=context,
             min_words=min_w,
             max_words=max_w,
@@ -240,7 +241,7 @@ with cx3:
         (st.success if mode == "llm" else st.info)(note if mode == "llm" else f"Fallback mode: {note}")
 
 st.markdown("### Ask GenAI")
-user_question = st.text_input("Ask from current analysis context", placeholder="What should city planners prioritize by 2035?")
+user_question = st.text_input("Ask from the analysis context", placeholder="How should I interpret the archive-based 2035 extrapolation?")
 if st.button("Ask") and user_question.strip():
     q_context = dict(context)
     q_context["question"] = user_question.strip()
@@ -255,7 +256,7 @@ if st.button("Ask") and user_question.strip():
     (st.success if mode == "llm" else st.info)(note if mode == "llm" else f"Fallback mode: {note}")
 
 if st.session_state.genai_last_text:
-    st.markdown("### Latest GenAI Output")
+    st.markdown("### GenAI Output")
     st.write(st.session_state.genai_last_text)
     st.download_button(
         "Download GenAI output (.txt)",

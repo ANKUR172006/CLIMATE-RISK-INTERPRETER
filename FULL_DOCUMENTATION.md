@@ -9,11 +9,10 @@ The application currently includes these pages:
 
 1. Home (`app.py`)
 2. Global Trends (`pages/1_Global_Trends.py`)
-3. Regional Risk Interpretation (`pages/3_Regional_Risk.py`)
+3. Regional Risk and Policy (`pages/3_Regional_Risk.py`)
 4. Scenario Explorer (`pages/4_Scenario_Explorer.py`)
-5. Policy Implications (`pages/5_Policy_Implications.py`)
-6. Climate Risk Pulse (`pages/6_Risk_pulse.py`)
-7. Climate Intelligence Engine (`pages/7_Climate_Intelligence_Engine.py`)
+5. Climate Risk Pulse (`pages/6_Risk_pulse.py`)
+6. Climate Intelligence Engine (`pages/7_Climate_Intelligence_Engine.py`)
 
 Core capabilities:
 
@@ -42,7 +41,7 @@ The prototype creates a structured decision flow:
 1. Understand historical warming baseline and trend behavior.
 2. Translate global signals into regional exposure and vulnerability.
 3. Explore future possibilities using simulation, not deterministic claims.
-4. Convert model outputs into policy urgency and practical action prompts.
+4. Convert model outputs into regional urgency and practical action prompts.
 
 In short, the tool bridges the gap between climate signal detection and practical interpretation.
 
@@ -171,20 +170,17 @@ Required for production-grade rollout:
 ### Global Trends
 - Time range controls, trend overlay, uncertainty band, rolling warming diagnostics, decadal shifts, seasonal 3D surface.
 
-### Regional Risk
-- AI-estimated or manual warming rate, regional adjustment, composite risk calculation, risk lens views, country context for South Asia.
+### Regional Risk and Policy
+- Model-estimated or manual archive signal rate, regional adjustment, composite score calculation, risk lens views, country context for South Asia, and urgency-based action guidance.
 
 ### Scenario Explorer
 - Monte Carlo warming range exploration with percentile outputs and threshold alerts.
 
-### Policy Implications
-- Planning-context selector and urgency-tiered policy recommendations supported by ML context.
-
 ### Climate Risk Pulse
-- Composite pulse index combining trend, volatility, acceleration, configurable alert threshold, and sectoral recommendations.
+- Signal triage page with a composite pulse index, turning-point detector, component-driver breakdown, era comparison, and quick archive-level interpretation.
 
 ### Climate Intelligence Engine
-- Full ML benchmarking, holdout comparison chart, feature influence visualization, uncertainty forecast, and regime clustering.
+- Advanced workbench with full ML benchmarking, holdout comparison chart, feature influence visualization, uncertainty extrapolation, regime clustering, and GenAI outputs.
 
 ---
 

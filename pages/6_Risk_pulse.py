@@ -1,18 +1,17 @@
-﻿import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-
-from genai_engine import generate_genai_brief
+import plotly.express as px
 
 st.set_page_config(layout="wide")
 st.title("Climate Risk Pulse")
 
 st.write(
     """
-    The **Risk Pulse** fuses warming trend, volatility, and acceleration
-    into a single interpretable signal. It is not a forecast - it is an
-    **early-warning composite** to help teams spot emerging risk regimes.
+    This page is a signal triage lab. Instead of repeating the main trend view, it answers
+    three different questions: when the archive changed fastest, which component drove the
+    pulse, and how one historical era compares with another.
     """
 )
 
@@ -29,12 +28,18 @@ def load_anomaly():
     return anomaly
 
 
-anomaly = load_anomaly()
+def _safe_zscore(values: np.ndarray) -> np.ndarray:
+    std = float(np.std(values))
+    if std == 0:
+        return np.zeros_like(values, dtype=float)
+    return (values - float(np.mean(values))) / std
 
+
+anomaly = load_anomaly()
 years = anomaly.index.year.values
 values = anomaly.values
 
-st.markdown("### Pulse configuration")
+st.markdown("### Pulse controls")
 
 c1, c2, c3 = st.columns(3)
 
@@ -53,38 +58,46 @@ if len(values) <= window:
 
 rolling_mean = pd.Series(values).rolling(window=window).mean().to_numpy()
 rolling_std = pd.Series(values).rolling(window=window).std().to_numpy()
-
 trend_rate = np.gradient(rolling_mean)
 acceleration = np.gradient(trend_rate)
 
 valid_mask = ~np.isnan(rolling_mean)
-
 roll_years = years[valid_mask]
 roll_mean = rolling_mean[valid_mask]
 roll_std = rolling_std[valid_mask]
+roll_rate = trend_rate[valid_mask]
 roll_acc = acceleration[valid_mask]
 
-z_score = (roll_mean - np.mean(roll_mean)) / np.std(roll_mean)
-vol_score = (roll_std - np.mean(roll_std)) / np.std(roll_std)
-acc_score = (roll_acc - np.mean(roll_acc)) / np.std(roll_acc)
+mean_score = _safe_zscore(roll_mean)
+vol_score = _safe_zscore(roll_std)
+acc_score = _safe_zscore(roll_acc)
 
-pulse_raw = z_score + (volatility_weight * vol_score) + (acceleration_weight * acc_score)
-
+pulse_raw = mean_score + (volatility_weight * vol_score) + (acceleration_weight * acc_score)
 pulse_min = np.percentile(pulse_raw, 5)
 pulse_max = np.percentile(pulse_raw, 95)
-pulse_index = 100 * (pulse_raw - pulse_min) / (pulse_max - pulse_min)
 
-pulse_index = np.clip(pulse_index, 0, 100)
+if pulse_max == pulse_min:
+    pulse_index = np.full_like(pulse_raw, 50.0, dtype=float)
+else:
+    pulse_index = 100 * (pulse_raw - pulse_min) / (pulse_max - pulse_min)
+    pulse_index = np.clip(pulse_index, 0, 100)
 
-latest_pulse = pulse_index[-1]
+turning_strength = np.abs(np.gradient(pulse_index))
 
-m1, m2, m3 = st.columns(3)
+final_pulse = float(pulse_index[-1])
+peak_idx = int(np.argmax(pulse_index))
+peak_year = int(roll_years[peak_idx])
+peak_pulse = float(pulse_index[peak_idx])
 
-m1.metric("Latest pulse index", f"{latest_pulse:.0f}")
-m2.metric("Rolling mean anomaly", f"{roll_mean[-1]:.2f} °C")
-m3.metric("Rolling volatility", f"{roll_std[-1]:.2f} °C")
+k1, k2, k3, k4 = st.columns(4)
+k1.metric(f"Final pulse ({roll_years[-1]})", f"{final_pulse:.0f}")
+k2.metric("Peak pulse", f"{peak_pulse:.0f}")
+k3.metric("Peak year", f"{peak_year}")
+k4.metric("Strongest shift count", f"{min(3, len(roll_years))}")
 
-st.caption("Pulse index scales to 0-100 using recent distribution percentiles.")
+st.caption("Pulse combines level, volatility, and acceleration into a 0-100 triage score.")
+
+st.markdown("### 1. Pulse timeline")
 
 fig = go.Figure()
 fig.add_trace(
@@ -92,110 +105,153 @@ fig.add_trace(
         x=roll_years,
         y=pulse_index,
         mode="lines",
-        line=dict(color="#7b1fa2", width=2),
-        name="Risk Pulse",
+        line=dict(color="#7b1fa2", width=3),
+        name="Pulse index",
     )
 )
-
+fig.add_trace(
+    go.Scatter(
+        x=[peak_year],
+        y=[peak_pulse],
+        mode="markers",
+        marker=dict(size=11, color="#d81b60"),
+        name="Peak pulse",
+    )
+)
 fig.update_layout(
-    height=420,
+    height=380,
     xaxis_title="Year",
-    yaxis_title="Risk Pulse Index",
+    yaxis_title="Pulse index",
     template="plotly_white",
     hovermode="x unified",
 )
-
 st.plotly_chart(fig, width="stretch")
 
-st.markdown("### Emerging risk alerts")
-
-alert_threshold = st.slider("Alert threshold", 60, 95, 80)
-
-recent_pulse = pd.Series(pulse_index, index=roll_years)
-alerts = recent_pulse[recent_pulse >= alert_threshold]
-
-if alerts.empty:
-    st.success("No alert thresholds crossed in the selected configuration.")
-else:
-    st.warning(
-        f"Alert threshold crossed in **{len(alerts)}** years. Latest high-pulse year: **{alerts.index[-1]}**."
-    )
-
 st.divider()
+st.markdown("### 2. Turning-point detector")
 
-st.markdown("### Local implication mapper")
-
-region = st.selectbox(
-    "Select a region",
-    ["Global", "South Asia", "Europe", "Arctic", "Small Island States"],
+turn_df = pd.DataFrame(
+    {
+        "Year": roll_years,
+        "Pulse index": pulse_index,
+        "Turning strength": turning_strength,
+        "Mean contribution": mean_score,
+        "Volatility contribution": volatility_weight * vol_score,
+        "Acceleration contribution": acceleration_weight * acc_score,
+    }
 )
 
-sector = st.selectbox(
-    "Select a sector",
-    ["Public health", "Food systems", "Infrastructure", "Water security"],
+top_turns = (
+    turn_df.sort_values("Turning strength", ascending=False)
+    .drop_duplicates(subset=["Year"])
+    .head(3)
+    .sort_values("Year")
+    .reset_index(drop=True)
 )
 
-if latest_pulse >= 80:
-    risk_state = "High"
-elif latest_pulse >= 60:
-    risk_state = "Elevated"
-else:
-    risk_state = "Moderate"
+st.write("Top years where the archive pulse changed most sharply:")
+st.dataframe(
+    top_turns.round(2),
+    width="stretch",
+    hide_index=True,
+)
 
-st.write(f"**Current pulse state:** {risk_state} risk signal for **{region}** in **{sector}**.")
+selected_turn_year = st.selectbox(
+    "Inspect a turning-point year",
+    top_turns["Year"].tolist(),
+    index=max(0, len(top_turns) - 1),
+)
 
-recommendations = {
-    "Public health": [
-        "Activate heat early-warning systems and public alerts.",
-        "Expand cooling centers and occupational heat protections.",
-        "Track heat-related morbidity in near-real time.",
-    ],
-    "Food systems": [
-        "Prioritize drought-resilient crop portfolios.",
-        "Increase strategic food storage buffers.",
-        "Accelerate irrigation efficiency upgrades.",
-    ],
-    "Infrastructure": [
-        "Stress-test energy and transport systems for peak heat.",
-        "Fast-track retrofit plans for critical assets.",
-        "Review design standards for extreme temperature exposure.",
-    ],
-    "Water security": [
-        "Enhance monitoring of reservoirs and groundwater drawdown.",
-        "Plan demand-management programs for heat peaks.",
-        "Assess transboundary water risk coordination.",
-    ],
-}
+selected_row = turn_df[turn_df["Year"] == selected_turn_year].iloc[0]
+component_df = pd.DataFrame(
+    {
+        "Component": ["Mean level", "Volatility", "Acceleration"],
+        "Contribution": [
+            float(selected_row["Mean contribution"]),
+            float(selected_row["Volatility contribution"]),
+            float(selected_row["Acceleration contribution"]),
+        ],
+    }
+)
 
-st.write("**Recommended actions:**")
-for item in recommendations[sector]:
-    st.write(f"- {item}")
+comp_fig = px.bar(
+    component_df,
+    x="Component",
+    y="Contribution",
+    color="Contribution",
+    color_continuous_scale="Tealgrn",
+    title=f"Pulse driver breakdown for {selected_turn_year}",
+)
+comp_fig.update_layout(height=360, coloraxis_showscale=False)
+st.plotly_chart(comp_fig, width="stretch")
 
-st.caption("These recommendations are generated from pulse intensity and sector context - not deterministic forecasts.")
+driver = component_df.iloc[component_df["Contribution"].abs().argmax()]["Component"]
+st.info(
+    f"In {selected_turn_year}, the pulse shifted most because of **{driver}**. "
+    "This makes the page useful for diagnosing why a climate signal changed, not just where it was high."
+)
 
 st.divider()
-st.subheader("GenAI pulse briefing")
+st.markdown("### 3. Era comparison")
 
-pulse_context = {
-    "rolling_window_years": int(window),
-    "volatility_weight": round(float(volatility_weight), 2),
-    "acceleration_weight": round(float(acceleration_weight), 2),
-    "latest_pulse_index": round(float(latest_pulse), 2),
-    "alert_threshold": int(alert_threshold),
-    "alert_years_count": int(len(alerts)),
-    "risk_state": risk_state,
-    "region": region,
-    "sector": sector,
+era_options = {
+    "1750-1799": (1750, 1799),
+    "1800-1849": (1800, 1849),
+    "1850-1900": (1850, 1900),
 }
 
-if st.button("Generate GenAI pulse summary"):
-    brief, mode, note = generate_genai_brief(
-        section_title="Pulse-based risk and alert summary",
-        objective="Summarize pulse alert status and immediate sector actions for local teams.",
-        context=pulse_context,
-    )
-    st.write(brief)
-    if mode == "llm":
-        st.success(note)
-    else:
-        st.info(f"Fallback mode: {note}")
+e1, e2 = st.columns(2)
+with e1:
+    left_era = st.selectbox("First era", list(era_options.keys()), index=0)
+with e2:
+    right_era = st.selectbox("Second era", list(era_options.keys()), index=2)
+
+
+def era_metrics(label: str) -> dict[str, float]:
+    start, end = era_options[label]
+    mask = (turn_df["Year"] >= start) & (turn_df["Year"] <= end)
+    era = turn_df.loc[mask]
+    return {
+        "Mean pulse": float(era["Pulse index"].mean()),
+        "Peak pulse": float(era["Pulse index"].max()),
+        "Mean volatility contribution": float(era["Volatility contribution"].mean()),
+        "Mean acceleration contribution": float(era["Acceleration contribution"].mean()),
+    }
+
+
+left_metrics = era_metrics(left_era)
+right_metrics = era_metrics(right_era)
+
+compare_df = pd.DataFrame(
+    {
+        "Metric": list(left_metrics.keys()),
+        left_era: list(left_metrics.values()),
+        right_era: list(right_metrics.values()),
+    }
+)
+st.dataframe(compare_df.round(2), width="stretch", hide_index=True)
+
+delta_pulse = right_metrics["Mean pulse"] - left_metrics["Mean pulse"]
+if delta_pulse > 10:
+    era_note = f"{right_era} shows a clearly stronger average pulse than {left_era}."
+elif delta_pulse < -10:
+    era_note = f"{left_era} shows a clearly stronger average pulse than {right_era}."
+else:
+    era_note = f"{left_era} and {right_era} sit in a fairly similar pulse range."
+
+st.success(era_note)
+
+st.divider()
+st.markdown("### 4. Quick read")
+
+if final_pulse >= 80:
+    summary = "The final archive years sit in a high pulse range."
+elif final_pulse >= 60:
+    summary = "The final archive years sit in an elevated pulse range."
+else:
+    summary = "The final archive years sit in a moderate pulse range."
+
+st.info(
+    f"{summary} This page is now meant for triage: detect turning points, inspect pulse drivers, "
+    f"and compare eras. For full ML benchmarking and extrapolation, open **Climate Intelligence Engine**."
+)

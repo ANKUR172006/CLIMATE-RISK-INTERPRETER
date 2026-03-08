@@ -28,9 +28,9 @@ def _template_brief(context: dict[str, Any]) -> str:
 
     return (
         f"Fallback brief: Best model is {model} (holdout RMSE {rmse_txt}). "
-        f"Current risk regime is {regime}. Median anomaly projection is about {p35_txt} by 2035 "
+        f"Final archive regime is {regime}. Illustrative anomaly extrapolation is about {p35_txt} by 2035 "
         f"and {p50_txt} by 2050 versus 1850-1900 baseline. "
-        f"Policy urgency is {urgency}; prioritize heat-health protection, resilient infrastructure, "
+        f"Interpret urgency as {urgency}; prioritize heat-health protection, resilient infrastructure, "
         f"and local adaptation planning with uncertainty-aware monitoring."
     )
 
@@ -439,7 +439,7 @@ def generate_policy_brief(context: dict[str, Any]) -> tuple[str, str, str]:
         "task": "Generate a policy brief from model outputs",
         "context": context,
         "required_sections": [
-            "Current signal",
+            "Archive signal",
             "Near-term risk",
             "Action priorities",
             "Uncertainty note",
